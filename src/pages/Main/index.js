@@ -12,6 +12,7 @@ class Main extends Component {
         newRepo: '',
         repositories: [],
         loading: false,
+        classError: false,
     };
 
     handleInputChange = e => {
@@ -25,17 +26,31 @@ class Main extends Component {
         });
         const { newRepo, repositories } = this.state;
 
-        const response = await api.get(`/repos/${newRepo}`);
+        try {
+            const exists = repositories.map(repo => repo == newRepo);
 
-        const data = {
-            name: response.data.full_name,
-        };
+            if (exists) {
+                throw new Error('Repositório duplicado');
+            }
 
-        this.setState({
-            repositories: [...repositories, data],
-            newRepo: '',
-            loading: false,
-        });
+            const response = await api.get(`/repos/${newRepo}`);
+
+            const data = {
+                name: response.data.full_name,
+            };
+
+            this.setState({
+                repositories: [...repositories, data],
+                newRepo: '',
+                classError: false,
+            });
+        } catch (error) {
+            this.setState({
+                classError: true,
+            });
+        } finally {
+            this.setState({ loading: false });
+        }
     };
 
     //carregar os dados do localstorage -- executa quando inicia o componete
@@ -57,7 +72,7 @@ class Main extends Component {
     }
 
     render() {
-        const { newRepo, loading, repositories } = this.state;
+        const { newRepo, loading, repositories, classError } = this.state;
 
         return (
             <Container>
@@ -66,7 +81,7 @@ class Main extends Component {
                     Repositórios
                 </h1>
 
-                <Form onSubmit={this.handleSubmit}>
+                <Form onSubmit={this.handleSubmit} error={classError}>
                     <input
                         type="text"
                         placeholder="Adicionar Repositório"
